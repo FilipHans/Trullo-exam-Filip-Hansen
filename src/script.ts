@@ -2,11 +2,10 @@ import mongoose from "mongoose";
 import  express  from "express";
 import dotenv from 'dotenv';
 import { ApolloServer } from "@apollo/server";
-import { Query } from 'mongoose'
 import { expressMiddleware } from "@as-integrations/express5";
 import connectDB from "./db";
-import resolvers from "./recipe/graphql/resolvers";
-import typeDefs from "./recipe/graphql/typeDefs";
+import resolvers from "./graphql/resolvers";
+import typeDefs from "./graphql/typeDefs";
 
 dotenv.config();
 const port = 3000;
@@ -20,6 +19,9 @@ server.start().then(e => {
     context: async () => ({}),
 }))
 
+app.get('/ping', (req, res) => {
+    res.status(200).json({message: 'ping'})
+})
 })
 
 // Connect to MongdoDB
