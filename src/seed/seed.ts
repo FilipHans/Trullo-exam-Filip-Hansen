@@ -33,8 +33,8 @@ const seedDB = async () => {
     try {
         await User.deleteMany();
         await Task.deleteMany();
-        const fakeUserData: User[] = Array.from({length: 3}, createRandomUser);
-        const fakeTaskData: Task[] = Array.from({length: 3}, createRandomTask);
+        const fakeUserData: User[] = Array.from({length: 5}, createRandomUser);
+        const fakeTaskData: Task[] = Array.from({length: 5}, createRandomTask);
         await User.insertMany(fakeUserData);
         
         const users = await User.find();
