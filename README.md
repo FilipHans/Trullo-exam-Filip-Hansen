@@ -31,7 +31,7 @@ npm run seed
 ```
 
 * ✅ Passwords will be **hashed** in the database.
-* 🔓 **Unencrypted passwords** will be printed to your terminal so you can use them for login.
+* 🔓 **Unencrypted passwords** will be printed to your terminal so you can use them for the login route, the login route will provide the JWT token which can be entered as a bearer token to access protected routes.
 
 ---
 
@@ -45,6 +45,7 @@ After seeding, a static admin user is created:
 | Email    | `admin@example.com` |
 | Password | `admin1234`         |
 
+* Admin routes still require a JWT token since the role is stored as a value in it
 ---
 
 ### 4. 🚀 Start the Server
@@ -63,4 +64,3 @@ to interact with the GraphQL API.
 
 ---
 
-Let me know if you want this as a downloadable file (e.g., `README.md`) or if you need additional formatting for GitHub!
