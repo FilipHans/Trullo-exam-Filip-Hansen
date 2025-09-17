@@ -1,17 +1,62 @@
 import mongoose from "mongoose";
 import User from "../models/User";
 import Task from "../models/Task";
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import * as z from 'zod';
 import { GraphQLError } from "graphql";
+import { Context } from "vm";
+
+const JWT_SECRET = process.env.JWT_SECRET || 'no secret found';
+
+interface UserInput {
+    role: string,
+    name: String,
+    email: String,
+    password: String,
+    _id: mongoose.Types.ObjectId
+}
+
+const signToken = (user: UserInput) : string => {
+	return jwt.sign({ sub: user._id.toString(), role: user.role }, JWT_SECRET, {
+		expiresIn: "1h",
+	});
+};
 
 
-const SafeUserSchema = z.object(
+// Checks for JWTToken on protected routes
+const verifyToken = (context: Context) => {
+    console.log(context.user.sub)
+    if(!context.user) {
+        throw new GraphQLError('Invalid token', {
+            extensions: {
+                code: 'UNAUTHORIZED',
+                status: {code: 401}
+            }
+        })
+    }
+    return;
+}
+
+// FIX ZOD SCHEMA TO ALLOW NULLABLE FIELDS
+const CreateUserSchema = z.object(
     {
         name: z.string(),
         email: z.email('Must be a valid email pattern'),
         password: z.coerce
         .string()
         .min(8, 'Must contain atleast 8 characters')
+        
+    })
+const UpdateUserSchema = z.object(
+    {
+        name: z.string().optional(),
+        email: z.email('Must be a valid email pattern').optional(),
+        password: z.coerce
+        .string()
+        .min(8, 'Must contain atleast 8 characters')
+        .optional()
+        
     })
 
 const SafeTaskSchema = z.object(
@@ -28,6 +73,11 @@ enum Status {
     DONE = "DONE",
 }
 
+enum Role {
+    USER = 'USER',
+    ADMIN = 'ADMIN'
+}
+
 const resolvers = {
 
     Query : {
@@ -39,11 +89,14 @@ const resolvers = {
 
             return User.find();
         },
-        Task: async (_p: any, { _id }:{_id:  mongoose.Schema.Types.ObjectId}) => {
+        Task: async (_p: any, { _id } : {_id:  mongoose.Schema.Types.ObjectId}) => {
 
             if (!mongoose.isValidObjectId(_id)) {
                 throw new GraphQLError("ID is not valid", {
-                    extensions: {code: "STATUS_CODE_400", taskId: _id}
+                    extensions: {
+                        code: "INVALID_INPUT",
+                        status: {code: 400}
+                                }
                 })
             }
             return Task.findById(_id);
@@ -51,53 +104,201 @@ const resolvers = {
     },
 
     Mutation : {
-        // User Mutations
-        CreateUser : async (_p: any, { input } : any) => {
 
+        adminDeleteUser : async (_p: any, {input} : any, context: Context) => {
 
-            const {email, password, name} : {email: String, password: String, name: String} = input
-
-            const result = SafeUserSchema.safeParse(input);
-
-            if (!result.success) {
-                throw new GraphQLError("Invalid input", {
-                    extensions: {code: "STATUS_CODE_400", issues: result.error.issues}
+            verifyToken(context);
+            if (context.user.role !== Role.ADMIN) {
+                throw new GraphQLError('protected route', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 401}
+                    }
                 })
-            }
-            return User.create({email, password, name});
-        
-        },
-        UpdateUser : async (_p: any, {input} : any) => {
-            const {_id, name, email, password} : {_id: mongoose.Schema.Types.ObjectId ,name: String, email: String, password: String} = input;
-
-            if (!mongoose.isValidObjectId(_id)) {
-                throw new GraphQLError("ID is not valid", {
-                    extensions: {code: "STATUS_CODE_400", UserId: _id}
-                })
-            }
-            
-            const result = SafeUserSchema.safeParse({name, email, password});
-
-            if (!result.success) {
-                throw new GraphQLError("Invalid input", {
-                    extensions: {code: "STATUS_CODE_400", issues: result.error.issues}
-                })
-            }
-
-
-            return User.findByIdAndUpdate(_id, {email, password, name});
-        },
-        DeleteUser : async (_p: any, {input} : any) => {
+            } 
             const { _id } : {_id: mongoose.Schema.Types.ObjectId} = input;
 
             if (!mongoose.isValidObjectId(_id)) {
                 throw new GraphQLError("ID is not valid", {
-                    extensions: {code: "STATUS_CODE_400", userId: _id}
+                    extensions: {
+                        code: "INVALID_INPUT", 
+                        status: {code: 400},
+                        userId: _id}
                 })
             }
             return User.findByIdAndDelete(_id);
         },
 
+        adminUpdateUser : async(_p: any, { input } : any, context: Context) => {
+
+            verifyToken(context);
+            if (context.user.role !== Role.ADMIN) {
+                throw new GraphQLError('protected route', {
+                    extensions: {
+                        code: 'UNAUTHORIZED',
+                        http: { status: 401}
+                    }
+                })
+            } 
+        const {name, email, password, _id} : {name: String, email: String, password: string, _id: mongoose.Schema.Types.ObjectId} = input;
+            if (!mongoose.isValidObjectId(_id)) {
+                throw new GraphQLError("ID is not valid", {
+                    extensions: {
+                        code: "INVALID_INPUT",
+                        status: {code: 400}
+                        }
+                })
+            }
+        const result = UpdateUserSchema.safeParse({name, email, password});
+
+            if (!result.success) {
+                throw new GraphQLError("Invalid input", {
+                    extensions: {
+                        code: "INVALID_INPUT", 
+                        status: {code: 400},
+                        issues: result.error.issues}
+                })
+            }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        return await User.findByIdAndUpdate(_id, {name, email, password: hashedPassword})
+        },
+
+        // Login route
+
+        login : async (_p: any, {input} : any,) => {
+
+            const {email, password} : {email: string, password: string} = input; 
+            const user = await User.findOne({ email : email });
+
+            if (!user) {
+                throw new GraphQLError('No user with that email was found', {
+                    extensions: {
+                        code: "INVALID INPUT",
+                        http: { status: 404}
+                    }
+                })
+            }
+            
+            if (bcrypt.compareSync(password, user.password)) {
+
+                const token = signToken(user);
+                return { user: user.name, token: token };
+
+            } 
+            else {
+
+                throw new GraphQLError('Incorrect password', {
+                    extensions: {
+                        code: "INVALID_CREDENTIALS",
+                        status:  {code: 400}    
+                    }
+                })
+            }
+
+        },
+        // User Mutations
+        CreateUser : async (_p: any, { input } : any) => {
+
+
+            const {email, password, name} : {email: String, password: string, name: String} = input
+            const result = CreateUserSchema.safeParse(input);
+
+            if (!result.success) {
+                throw new GraphQLError("Invalid input", {
+                    extensions: {
+                        code: "INVALID_INPUT", 
+                        status: {code: 400},
+                        issues: result.error.issues}
+                })
+            }
+            const hashedPassword = await bcrypt.hash(password, 10);
+            return User.create({email, name, password: hashedPassword})        
+        },
+        UpdateUser : async (_p: any, {input} : any, context: Context) => {
+            const {name, email, password} : {name: String, email: String, password: string} = input;
+
+            verifyToken(context);
+            const _id: mongoose.Schema.Types.ObjectId = context.user.sub;
+
+            if (!mongoose.isValidObjectId(_id)) {
+                throw new GraphQLError("ID is not valid", {
+                    extensions: {
+                        code: "INVALID_INPUT",
+                        status: {code: 400}
+                                }
+                })
+            }
+            
+            const result = UpdateUserSchema.safeParse({name, email, password});
+
+            if (!result.success) {
+                throw new GraphQLError("Invalid input", {
+                    extensions: {
+                        code: "INVALID_INPUT", 
+                        status: {code: 400},
+                        issues: result.error.issues}
+                })
+            }
+            
+            const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+
+            return User.findByIdAndUpdate(_id, {email, password: hashedPassword, name});
+        },
+        DeleteUser : async (_p: any, {_input} : any, context: Context) => {
+
+            verifyToken(context);
+            const { _id } : {_id: mongoose.Schema.Types.ObjectId} = context.user.sub;
+
+            if (!mongoose.isValidObjectId(_id)) {
+                throw new GraphQLError("ID is not valid", {
+                    extensions: {
+                        code: "INVALID_INPUT", 
+                        status: {code: 400},
+                        userId: _id}
+                })
+            }
+            return User.findByIdAndDelete(_id);
+        },
+
+        updatePassword : async (_p: any, {input} : any, context: Context) => {
+
+            const {oldPassword, newPassword} : {oldPassword: string, newPassword: string} = input;
+            verifyToken(context);
+            const _id = context.user.sub;
+                if (!mongoose.isValidObjectId(_id)) {
+                throw new GraphQLError("ID is not valid", {
+                    extensions: {
+                        code: "INVALID_INPUT", 
+                        status: {code: 400},
+                        userId: _id}
+                })
+            }
+            const user = await User.findById(_id);
+
+            if (!user) {
+                throw new GraphQLError('NO USER FOUND', {
+                    extensions : {
+                        code: 'NOTHING_FOUND',
+                        status: {code: 404}
+                    }
+                })
+            }
+            if (bcrypt.compareSync(oldPassword , user.password)) {
+
+                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                return User.findByIdAndUpdate(_id,{password: hashedPassword})
+            } else 
+            {
+                throw new GraphQLError('INCORRECT PASSWORD',
+                    {
+                        extensions : {
+                            code: 'INVALID_INPUT',
+                            status: {code: 400}
+                        }
+                    } 
+                )
+            }
+        },
         // Task Mutations
         CreateTask : async (_p: any, {input} : any ) => {
             const { title, description, assignedTo} : {title: String, description: String, assignedTo: mongoose.Schema.Types.ObjectId} = input;
@@ -118,17 +319,23 @@ const resolvers = {
 
             return Task.create({title, description, assignedTo});
         },
-        UpdateTask : async (_p: any, {input} : any ) => {
-            const {_id, title, description, status } : {_id: mongoose.Schema.Types.ObjectId, title: String, description: String, status: Status} = input;
-            
+        UpdateTask : async (_p: any, {input} : any, context: Context ) => {
+            const {title, description, status } : { title: String, description: String, status: Status} = input;
+            verifyToken(context);
+            const _id : mongoose.Schema.Types.ObjectId = context.user.sub; 
+
             if (!mongoose.isValidObjectId(_id)) {
                 throw new GraphQLError("ID is not valid", {
-                    extensions: {code: "STATUS_CODE_400", taskId: _id}
+                    extensions: {
+                        code: "INVALID_INPUT",
+                        status: {code: 400},
+                        taskId: _id
+                            }
                 })
             }
             if (status == Status.DONE ) {
                 const finishedAt = new Date();
-                return Task.findByIdAndUpdate(_id, {status, title, description, finishedAt})
+                return Task.findByIdAndUpdate(_id, {status, title, description, finishedAt, finishedBy: _id})
             }
             return  Task.findByIdAndUpdate(_id, {status, title, description});
         },
@@ -139,10 +346,5 @@ const resolvers = {
 		finishedAt: (doc: mongoose.DocumentSetOptions) => doc.updatedAt.toISOString(),
     }
 }
-
-
-
-
-
 
 export default resolvers;

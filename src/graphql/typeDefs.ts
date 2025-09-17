@@ -21,6 +21,10 @@ type Task {
     createdAt: String!
 	finishedAt: String!
 }
+input IDInput {
+    _id: ID,
+}
+
 input UserInput {
     name: String!,
     email: String!,
@@ -34,10 +38,16 @@ input TaskInput {
 }
 
 input UpdateUserInput {
-    id: ID!,
     name: String,
     email: String,
     password: String,
+}
+
+input adminUpdate {
+    name: String,
+    email: String,
+    password: String,
+    id: ID!,
 }
 
 input UpdateTaskInput {
@@ -47,6 +57,20 @@ input UpdateTaskInput {
     description: String,
 }
 
+input LoginInput {
+    email: String!,
+    password: String!,
+}
+
+input UpdatePassword {
+    oldPassword: String!,
+    newPassword: String!,
+}
+
+type AuthPayload {
+    user: String!,
+    token: String!,
+}
 
 type Query {
     # Get all users
@@ -62,10 +86,16 @@ type Query {
 type Mutation {
     UpdateUser(input: UpdateUserInput) : User,
     CreateUser(input: UserInput!) : User!,
-    DeleteUser(input: ID!) : ID!
+    DeleteUser(input: IDInput) : ID!,
+
+    adminDeleteUser(input: IDInput) : ID!,
+    adminUpdateUser(input: adminUpdateUser) : User!,
+
+    UpdatePassword(input: UpdatePassword!) : User!,
 
     CreateTask(input: TaskInput!) : Task!,
     UpdateTask(input: UpdateTaskInput): Task!,
+    login(input: LoginInput): AuthPayload!,
 }
 
 

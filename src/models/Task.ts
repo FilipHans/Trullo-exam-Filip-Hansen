@@ -12,10 +12,12 @@ const TaskSchema = new mongoose.Schema(
         assignedTo: 
             {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
+            ref: "User",
+            default: null
             },
         finishedAt: {type: Date, default: null},
         createdAt: {type: Date, default: () => new Date()},
+        finishedBy: {type: mongoose.Schema.Types.ObjectId, default: null}
         
 
     },
