@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType, ObjectId } from "mongoose";
 
 const UserSchema = new mongoose.Schema(
     {
@@ -8,10 +8,12 @@ const UserSchema = new mongoose.Schema(
         role: {type: String,
             enum: ['USER', 'ADMIN'],
             default: 'USER'
-         }
+        }
     }
 )
 
 const User = mongoose.model('Users', UserSchema);
-
+export type UserType = InferSchemaType<typeof UserSchema>;
+export type UserTypePartial = Partial<UserType>;
+export type UserTypePartialWithId = Partial<UserType> & {_id: ObjectId};
 export default User;

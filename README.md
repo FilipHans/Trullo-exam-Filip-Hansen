@@ -37,7 +37,7 @@ npm run seed
 
 ### 👤 Admin User
 
-After seeding, a static admin user is created:
+After seeding a static admin user is created:
 
 | Field    | Value               |
 | -------- | ------------------- |

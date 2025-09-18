@@ -62,7 +62,7 @@ input LoginInput {
     password: String!,
 }
 
-input UpdatePassword {
+input changePassword {
     oldPassword: String!,
     newPassword: String!,
 }
@@ -74,31 +74,30 @@ type AuthPayload {
 
 type Query {
     # Get all users
-    Users(input: Int) : [User!]
+    Users : [User]!
 
     # Get one user by email
     User(email: String) : User!
 
     # List all task related to user 
-    Task(_id: ID) : [Task!]
+    Task(_id: ID) : [Task]!
 }
 
 type Mutation {
+
     UpdateUser(input: UpdateUserInput) : User,
     CreateUser(input: UserInput!) : User!,
-    DeleteUser(input: IDInput) : ID!,
+    DeleteUser : ID!,
 
-    adminDeleteUser(input: IDInput) : ID!,
-    adminUpdateUser(input: adminUpdateUser) : User!,
+    adminDeleteUser(_id: ID) : ID!,
+    adminUpdateUser(input: adminUpdate) : User!,
 
-    UpdatePassword(input: UpdatePassword!) : User!,
-
+    updatePassword(input: changePassword!) : User!,
+    
     CreateTask(input: TaskInput!) : Task!,
     UpdateTask(input: UpdateTaskInput): Task!,
     login(input: LoginInput): AuthPayload!,
 }
-
-
 
 `;
 

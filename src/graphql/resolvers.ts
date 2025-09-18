@@ -1,12 +1,13 @@
-import mongoose from "mongoose";
-import User from "../models/User";
+import mongoose, { ObjectId } from "mongoose";
+import User, { UserTypePartialWithId } from "../models/User";
 import Task from "../models/Task";
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import * as z from 'zod';
 import { GraphQLError } from "graphql";
 import { Context } from "vm";
-
+import { TaskType, TaskTypePartial } from "../models/Task";
+import { UserType, UserTypePartial } from "../models/User";
 const JWT_SECRET = process.env.JWT_SECRET || 'no secret found';
 
 interface UserInput {
@@ -15,6 +16,11 @@ interface UserInput {
     email: String,
     password: String,
     _id: mongoose.Types.ObjectId
+}
+
+interface updatePassword {
+    oldPassword: string,
+    newPassword: string,
 }
 
 const signToken = (user: UserInput) : string => {
@@ -105,7 +111,7 @@ const resolvers = {
 
     Mutation : {
 
-        adminDeleteUser : async (_p: any, {input} : any, context: Context) => {
+        adminDeleteUser : async (_p: any, {_id} : {_id: ObjectId}, context: Context) => {
 
             verifyToken(context);
             if (context.user.role !== Role.ADMIN) {
@@ -116,7 +122,6 @@ const resolvers = {
                     }
                 })
             } 
-            const { _id } : {_id: mongoose.Schema.Types.ObjectId} = input;
 
             if (!mongoose.isValidObjectId(_id)) {
                 throw new GraphQLError("ID is not valid", {
@@ -129,7 +134,7 @@ const resolvers = {
             return User.findByIdAndDelete(_id);
         },
 
-        adminUpdateUser : async(_p: any, { input } : any, context: Context) => {
+        adminUpdateUser : async(_p: any, {input}  : { input: UserTypePartialWithId }, context: Context) => {
 
             verifyToken(context);
             if (context.user.role !== Role.ADMIN) {
@@ -140,7 +145,7 @@ const resolvers = {
                     }
                 })
             } 
-        const {name, email, password, _id} : {name: String, email: String, password: string, _id: mongoose.Schema.Types.ObjectId} = input;
+        const {name, email, password, _id}  = input;
             if (!mongoose.isValidObjectId(_id)) {
                 throw new GraphQLError("ID is not valid", {
                     extensions: {
@@ -159,15 +164,15 @@ const resolvers = {
                         issues: result.error.issues}
                 })
             }
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
         return await User.findByIdAndUpdate(_id, {name, email, password: hashedPassword})
         },
 
         // Login route
 
-        login : async (_p: any, {input} : any,) => {
+        login : async (_p: any, {...input} : {email: string, password: string},) => {
 
-            const {email, password} : {email: string, password: string} = input; 
+            const {email, password} = input; 
             const user = await User.findOne({ email : email });
 
             if (!user) {
@@ -197,10 +202,10 @@ const resolvers = {
 
         },
         // User Mutations
-        CreateUser : async (_p: any, { input } : any) => {
+        CreateUser : async (_p: any, { input } : { input : UserType }) => {
 
 
-            const {email, password, name} : {email: String, password: string, name: String} = input
+            const {email, password, name} = input;
             const result = CreateUserSchema.safeParse(input);
 
             if (!result.success) {
@@ -214,8 +219,8 @@ const resolvers = {
             const hashedPassword = await bcrypt.hash(password, 10);
             return User.create({email, name, password: hashedPassword})        
         },
-        UpdateUser : async (_p: any, {input} : any, context: Context) => {
-            const {name, email, password} : {name: String, email: String, password: string} = input;
+        UpdateUser : async (_p: any, {input} : {input: UserTypePartial}, context: Context) => {
+            const {name, email, password} = input;
 
             verifyToken(context);
             const _id: mongoose.Schema.Types.ObjectId = context.user.sub;
@@ -244,7 +249,7 @@ const resolvers = {
 
             return User.findByIdAndUpdate(_id, {email, password: hashedPassword, name});
         },
-        DeleteUser : async (_p: any, {_input} : any, context: Context) => {
+        DeleteUser : async (_p: any, context: Context) => {
 
             verifyToken(context);
             const { _id } : {_id: mongoose.Schema.Types.ObjectId} = context.user.sub;
@@ -260,9 +265,9 @@ const resolvers = {
             return User.findByIdAndDelete(_id);
         },
 
-        updatePassword : async (_p: any, {input} : any, context: Context) => {
+        updatePassword : async (_p: any, {input} : {input: updatePassword}, context: Context) => {
 
-            const {oldPassword, newPassword} : {oldPassword: string, newPassword: string} = input;
+            const {oldPassword, newPassword} = input;
             verifyToken(context);
             const _id = context.user.sub;
                 if (!mongoose.isValidObjectId(_id)) {
@@ -300,8 +305,8 @@ const resolvers = {
             }
         },
         // Task Mutations
-        CreateTask : async (_p: any, {input} : any ) => {
-            const { title, description, assignedTo} : {title: String, description: String, assignedTo: mongoose.Schema.Types.ObjectId} = input;
+        CreateTask : async (_p: any, {input} : {input: TaskType} ) => {
+            const { title, description, assignedTo} = input;
             
             if (!mongoose.isValidObjectId(assignedTo)) {
                 throw new GraphQLError("ID is not valid", {
@@ -319,8 +324,8 @@ const resolvers = {
 
             return Task.create({title, description, assignedTo});
         },
-        UpdateTask : async (_p: any, {input} : any, context: Context ) => {
-            const {title, description, status } : { title: String, description: String, status: Status} = input;
+        UpdateTask : async (_p: any, {input} : {input: TaskTypePartial}, context: Context ) => {
+            const {title, description, status } = input;
             verifyToken(context);
             const _id : mongoose.Schema.Types.ObjectId = context.user.sub; 
 

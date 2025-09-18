@@ -18,19 +18,29 @@ const getUser = (authHeader: string | undefined) => {
     if (!authHeader || !authHeader.startsWith("Bearer ")) return;
 
     const token = authHeader.split(' ')[1];
-
-    const decodedUser = jwt.verify(token, JWT_SECRET)
+    const decodedUser = jwt.verify(token, JWT_SECRET);
     return decodedUser;
 }
 
 // Start and connect Apollo server
-const server = new ApolloServer({typeDefs, resolvers})
+const server = new ApolloServer({typeDefs, resolvers, introspection: true})
 server.start().then(e => {
     app.use("/graphql", expressMiddleware(server, {
     context: async ({req}) => {
+
+        try {
         const authHeader = req.headers.authorization;
-        const user = getUser(authHeader);
-        return { user };
+        if (authHeader) {
+            const user = getUser(authHeader);
+            return { user };
+        } else {
+            return {}
+        }
+        } catch (error) {
+            console.error(error)
+        return {};
+        }
+        
     },
 }))
 })

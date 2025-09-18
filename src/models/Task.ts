@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { InferSchemaType } from 'mongoose';
 
 const TaskSchema = new mongoose.Schema(
     {
@@ -26,5 +26,6 @@ const TaskSchema = new mongoose.Schema(
 )
 
 const Task = mongoose.model('Tasks', TaskSchema);
-
+export type TaskType = InferSchemaType<typeof TaskSchema>
+export type TaskTypePartial = Partial<TaskType>
 export default Task;
