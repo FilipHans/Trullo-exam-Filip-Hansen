@@ -14,6 +14,7 @@ const UserSchema = new mongoose.Schema(
 
 const User = mongoose.model('Users', UserSchema);
 export type UserType = InferSchemaType<typeof UserSchema>;
+export type UserTypeWithId = InferSchemaType<typeof UserSchema> & {_id: ObjectId};
 export type UserTypePartial = Partial<UserType>;
 export type UserTypePartialWithId = Partial<UserType> & {_id: ObjectId};
 export default User;

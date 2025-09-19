@@ -1,5 +1,5 @@
 import mongoose, { ObjectId } from "mongoose";
-import User, { UserTypePartialWithId } from "../models/User";
+import User, { UserTypePartialWithId, UserTypeWithId } from "../models/User";
 import Task from "../models/Task";
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
