@@ -1,5 +1,26 @@
 # Trullo-exam-Filip-Hansen
 
+## Teoretiska resonemang
+
+### Motivera ditt val av databas 
+
+Mitt val av databas drevs huvudsakligen utav en vilja att arbeta vidare i NoSQL för att utöka min kunskap av en mer ofamiljär teknik. 
+
+### Redogör vad de olika teknikerna (ex. verktyg, npm-paket, etc.) gör i applikationen
+
+Apollo + Graphql för att skapa min GraphQL API
+
+bcrypt för att hasha mina lösenord innan de sparades i databasen
+
+JWT för att kunna "logga in" användera och använda för att addera authentication och authorization till mina rutter
+
+mongoose som ODM till mongoDB för att definera schemas
+
+Zod för att addera validering till datan som går igenom mina rutter 
+
+
+### Redogör översiktligt hur applikationen fungerar
+
 ## 🛠 Setup Instructions
 
 ### 1. 📦 Install Dependencies
