@@ -137,10 +137,11 @@ const resolvers = {
                     extensions: {
                         code: "INVALID_INPUT", 
                         status: {code: 400},
-                        userId: _id}
+                        }
                 })
             }
-            return User.findByIdAndDelete(_id);
+            User.findByIdAndDelete(_id);
+            return `User with id ${_id} deleted`;
         },
 
         adminUpdateUser : async(_p: any, {input}  : { input: UserTypePartialWithId }, context: Context) => {
@@ -179,9 +180,11 @@ const resolvers = {
 
         // Login route
 
-        login : async (_p: any, {...input} : {email: string, password: string},) => {
+        login : async (_p: any, {input} : {input : {email: string, password: string}},) => {
 
             const {email, password} = input; 
+            console.log(input)  
+            console.log(email)
             const user = await User.findOne({ email : email });
 
             if (!user) {

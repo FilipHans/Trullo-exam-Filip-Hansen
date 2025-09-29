@@ -89,7 +89,7 @@ type Mutation {
     CreateUser(input: UserInput!) : User!,
     DeleteUser : ID!,
 
-    adminDeleteUser(_id: ID) : ID!,
+    adminDeleteUser(_id: ID) : String!,
     adminUpdateUser(input: adminUpdate) : User!,
 
     updatePassword(input: changePassword!) : User!,
