@@ -55,6 +55,7 @@ npm run seed
 * 🔓 **Unencrypted passwords** will be printed to your terminal so you can use them for the login route, the login route will provide the JWT token which can be entered as a bearer token to access protected routes.
 
 * All protected routes that require a JWT token
+
 | Mutation Name     | Description                            | Access Role Required |
 | ----------------- | -------------------------------------- | -------------------- |
 | `adminDeleteUser` | Delete a user by admin                 | `Role.ADMIN`         |
