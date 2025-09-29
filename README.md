@@ -54,6 +54,16 @@ npm run seed
 * ✅ Passwords will be **hashed** in the database.
 * 🔓 **Unencrypted passwords** will be printed to your terminal so you can use them for the login route, the login route will provide the JWT token which can be entered as a bearer token to access protected routes.
 
+* All protected routes that require a JWT token
+| Mutation Name     | Description                            | Access Role Required |
+| ----------------- | -------------------------------------- | -------------------- |
+| `adminDeleteUser` | Delete a user by admin                 | `Role.ADMIN`         |
+| `adminUpdateUser` | Update a user by admin                 | `Role.ADMIN`         |
+| `UpdateUser`      | Authenticated user updates own profile | Authenticated user   |
+| `DeleteUser`      | Authenticated user deletes own account | Authenticated user   |
+| `updatePassword`  | Authenticated user updates password    | Authenticated user   |
+| `UpdateTask`      | Update task status/title/description   | Authenticated user   |
+
 ---
 
 ### 👤 Admin User

@@ -89,7 +89,16 @@ const resolvers = {
     Query : {
 
         User: async (_p: any, {email} : {email : String}) => {
-            return User.findOne({email: email})
+            const user = User.findOne({email: email})
+            if (!user) {
+                throw new GraphQLError("No user was found", {
+                    extensions: {
+                        code: "EMPTY_DATA",
+                        status: {code: 404}
+                    }
+                })
+            }
+            return user;
         },
         Users: async (_p: any, _input: any) => {
 
