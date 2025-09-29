@@ -29,14 +29,15 @@ interface Task {
     description: string,
 }
 
+
+
 const seedDB = async () => {
     try {
         await User.deleteMany();
         await Task.deleteMany();
-        const fakeUserData: User[] = Array.from({length: 5}, createRandomUser);
-        const fakeTaskData: Task[] = Array.from({length: 5}, createRandomTask);
+        const fakeUserData: User[] = Array.from({length: 10}, createRandomUser);
+        const fakeTaskData: Task[] = Array.from({length: 10}, createRandomTask);
         await User.insertMany(fakeUserData);
-        
         const users = await User.find();
         console.log(fakeUserData);
 

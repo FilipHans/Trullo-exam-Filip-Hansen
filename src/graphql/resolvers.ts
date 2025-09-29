@@ -89,7 +89,7 @@ const resolvers = {
     Query : {
 
         User: async (_p: any, {email} : {email : String}) => {
-            const user = User.findOne({email: email})
+            const user = await User.findOne({email: email})
             if (!user) {
                 throw new GraphQLError("No user was found", {
                     extensions: {
@@ -102,7 +102,7 @@ const resolvers = {
         },
         Users: async (_p: any, _input: any) => {
 
-            return User.find();
+            return await User.find();
         },
         Task: async (_p: any, { _id } : {_id:  mongoose.Schema.Types.ObjectId}) => {
 
@@ -114,7 +114,7 @@ const resolvers = {
                                 }
                 })
             }
-            return Task.findById(_id);
+            return await Task.findById(_id);
         }
     },
 
@@ -140,7 +140,7 @@ const resolvers = {
                         }
                 })
             }
-            User.findByIdAndDelete(_id);
+            await User.findByIdAndDelete(_id);
             return `User with id ${_id} deleted`;
         },
 
@@ -229,7 +229,7 @@ const resolvers = {
                 })
             }
             const hashedPassword = await bcrypt.hash(password, 10);
-            return User.create({email, name, password: hashedPassword})        
+            return await User.create({email, name, password: hashedPassword})        
         },
         UpdateUser : async (_p: any, {input} : {input: UserTypePartial}, context: Context) => {
             const {name, email, password} = input;
@@ -259,7 +259,7 @@ const resolvers = {
             
             const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
 
-            return User.findByIdAndUpdate(_id, {email, password: hashedPassword, name});
+            return await User.findByIdAndUpdate(_id, {email, password: hashedPassword, name});
         },
         DeleteUser : async (_p: any, context: Context) => {
 
@@ -274,7 +274,7 @@ const resolvers = {
                         userId: _id}
                 })
             }
-            return User.findByIdAndDelete(_id);
+            return await User.findByIdAndDelete(_id);
         },
 
         updatePassword : async (_p: any, {input} : {input: updatePassword}, context: Context) => {
@@ -303,7 +303,7 @@ const resolvers = {
             if (bcrypt.compareSync(oldPassword , user.password)) {
 
                 const hashedPassword = await bcrypt.hash(newPassword, 10);
-                return User.findByIdAndUpdate(_id,{password: hashedPassword})
+                return await User.findByIdAndUpdate(_id,{password: hashedPassword})
             } else 
             {
                 throw new GraphQLError('INCORRECT PASSWORD',
@@ -334,7 +334,7 @@ const resolvers = {
                 })
             }
 
-            return Task.create({title, description, assignedTo});
+            return await Task.create({title, description, assignedTo});
         },
         UpdateTask : async (_p: any, {input} : {input: TaskTypePartial}, context: Context ) => {
             const {title, description, status } = input;
@@ -351,10 +351,10 @@ const resolvers = {
                 })
             }
             if (status == Status.DONE ) {
-                const finishedAt = new Date();
-                return Task.findByIdAndUpdate(_id, {status, title, description, finishedAt, finishedBy: _id})
+                const currentTime = new Date();
+                return await Task.findByIdAndUpdate(_id, {status, title, description, finishedAt: currentTime, updatedAt: currentTime, finishedBy: _id})
             }
-            return  Task.findByIdAndUpdate(_id, {status, title, description});
+            return await Task.findByIdAndUpdate(_id, {status, title, description});
         },
     },
 
